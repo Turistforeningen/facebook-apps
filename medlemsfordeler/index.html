@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <style type="text/css">
+      body {
+        padding: 0;
+        margin: 0;
+        width: 810px;
+        border: 0;
+        overflow: hidden;
+      }
+
+      p {
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="container">
+      <p>
+        <img src="header.png" alt="Den Norske Turistforening">
+      </p>
+
+      <p>
+        <a href="https://www.dnt.no/innmelding/" target="_blank">
+          <img src="1-innmelding.jpg" alt="Klikk her for å mede deg inn">
+        </a>
+      </p>
+
+      <p>
+        <a href="https://www.dnt.no/hytter/" target="_blank">
+          <img src="2-hytter.jpg" alt="480 hytter til din disposisjon">
+        </a>
+      </p>
+
+      <p>
+        <a href="https://www.dnt.no/turutstyr-og-kart/" target="_blank">
+          <img src="3-turutstyr.jpg" lat="Turutstyr til medlemspriser">
+        </a>
+      </p>
+
+      <p>
+        <a href="https://www.dnt.no/kurs/" target="_blank">
+          <img src="4-turer-kurs.jpg" alt="Turer og kurs over hele landet">
+        </a>
+      </p>
+
+      <p>
+        <a href="https://www.dnt.no/fjellogvidde/" target="_blank">
+          <img src="5-litteratur.jpg" alt="Inspirasjonslitteratur">
+        </a>
+      </p>
+
+      <p>
+        <a href="https://www.gjensidige.no/privat/kundefordeler/dnt" target="_blank">
+          <img src="6-forsikring.jpg" alt="Forsikring til medlemspriser">
+        </a>
+      </p>
+    </div>
+
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : '1708645452790036',
+          xfbml      : true,
+          version    : 'v2.8'
+        });
+        FB.Canvas.setAutoGrow(2000);
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+  </body>
+</html>

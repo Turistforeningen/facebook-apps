@@ -1,0 +1,8 @@
+facebook-apps:
+  image: turistforeningen/facebook-apps:latest
+  tags:
+    - app
+  expose:
+    - "80"
+  environment:
+    VIRTUAL_HOST: "https://facebook-apps.app.dnt.no/*"

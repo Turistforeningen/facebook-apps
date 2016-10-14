@@ -1,4 +1,5 @@
 facebook-apps:
+  autoredeploy: true
   image: turistforeningen/facebook-apps:latest
   tags:
     - app

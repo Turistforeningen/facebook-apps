@@ -7,3 +7,4 @@ facebook-apps:
     - "80"
   environment:
     VIRTUAL_HOST: "https://facebook-apps.app.dnt.no/*"
+    VIRTUAL_HOST_WEIGHT: 20

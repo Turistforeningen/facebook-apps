@@ -1,2 +1,3 @@
 Static Facebook apps for https://www.facebook.com/turistforeningen/
 Manage apps at https://developers.facebook.com/apps
+Add app to page with http://www.facebook.com/dialog/pagetab?app_id=YOUR_APP_ID&next=YOUR_URL

@@ -26,13 +26,13 @@ jobs:
       - run:
           name: build facebook-apps docker image and push image to GCR
           command: |
-            gcloud auth configure-docker
+            gcloud auth configure-docker --quiet
             TAG=${CIRCLE_SHA1:0:9}
             docker build -t facebook-apps .
             docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
             docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
-            docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
-            docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
+            docker push eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
+            docker push eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
 
   deploy-to-dev:
     docker:

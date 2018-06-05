@@ -7,37 +7,32 @@ jobs:
   build-image:
     docker:
       # specify the version you desire here
-      - image: circleci/node:7.10.0
+      - image: google/cloud-sdk:latest
 
     working_directory: ~/repo
 
     steps:
-      - checkout
-
-      # install gcloud (needed to push images to GCR)
       - run:
-          name: install gcloud
-          command: |
-            sudo apt-get install lsb-release
-            export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
-            echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-            sudo apt-get update && sudo apt-get install google-cloud-sdk
+        name: authenticate with google service account
+        command: |
+          echo $GCLOUD_DOCKER_CREDENTIALS > ${HOME}/gcloud-service-key.json
+          gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+
+      - checkout
 
       # starts a remote docker environment to run docker commands
       - setup_remote_docker
 
       - run:
-          name: build facebook-apps docker image, authenticate to gcloud and push image to GCR
+          name: build facebook-apps docker image and push image to GCR
           command: |
+            gcloud auth configure-docker
             TAG=${CIRCLE_SHA1:0:9}
             docker build -t facebook-apps .
             docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
             docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
-            chmod +x .circleci/gcloud-auth.sh
-            .circleci/gcloud-auth.sh
-            gcloud docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
-            gcloud docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
+            docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
+            docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
 
   deploy-to-dev:
     docker:

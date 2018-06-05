@@ -1,0 +1,49 @@
+# metadata -- add as many key/value pairs as you want
+[metadata]
+org = "DNT"
+maintainer = "Roar Skår & Sami Alajrami (sami@praqma.com)"
+
+# paths to the certificate for connecting to the cluster
+# You can skip this if you use Helmsman on a machine with kubectl already connected to your k8s cluster.
+[certificates]
+caCrt    = "$DEV_CLUSTER_CERT"
+caKey    = "$DEV_CLUSTER_CLIENT_KEY"
+caClient = "$DEV_CLUSTER_CLIENT_CERT"
+
+[settings]
+kubeContext = "dnt" # will try connect to this context first, if it does not exist, it will be created using the details below
+username = "$DEV_CLUSTER_USERNAME"
+password = "$DEV_CLUSTER_PASSWORD" # admin user password
+clusterURI = "$DEV_CLUSTER_URI" # cluster API
+
+
+# define your environments and thier k8s namespaces
+# syntax: (whitespaces don't matter)
+# [namespaces]
+# [namespaces.<your namespace>]
+#  protected = <true/false> # default is false
+[namespaces]
+[namespaces.dev]
+
+
+# define any private/public helm charts repos you would like to get charts from
+# syntax: repo_name = "repo_url"
+[helmRepos]
+stable = "https://kubernetes-charts.storage.googleapis.com"
+incubator = "http://storage.googleapis.com/kubernetes-charts-incubator"
+dnt = "gs://dnt-helm-repo"
+
+# define the desired state of your applications helm charts
+# each contains the following:
+
+[apps]
+    [apps.fb-apps]
+    name = "fb-apps" # should be unique across all apps
+    description = "Facebook Apps in namespace: dev"
+    namespace = "dev" # maps to the namespace as defined in environmetns above
+    enabled = true # change to false if you want to delete this app release [empty/undefined = false]
+    chart = "dnt/web-app" # don't change the chart name if you want to use a new chart, create a new release in the apps section instead
+    version = "0.1.0"
+    valuesFile = ".circleci/fb-apps-values.yaml" # leaving it empty uses the default chart values
+    purge = false # will only be considered when there is a delete operation
+    test = false # run helm tests whenever this release is installed

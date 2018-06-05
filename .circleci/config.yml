@@ -1,0 +1,67 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build-image:
+    docker:
+      # specify the version you desire here
+      - image: circleci/node:7.10.0
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # install gcloud (needed to push images to GCR)
+      - run:
+          name: install gcloud
+          command: |
+            sudo apt-get install lsb-release
+            export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+            echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            sudo apt-get update && sudo apt-get install google-cloud-sdk
+
+      # starts a remote docker environment to run docker commands
+      - setup_remote_docker
+
+      - run:
+          name: build facebook-apps docker image, authenticate to gcloud and push image to GCR
+          command: |
+            TAG=${CIRCLE_SHA1:0:9}
+            docker build -t facebook-apps .
+            docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
+            docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
+            chmod +x .circleci/gcloud-auth.sh
+            .circleci/gcloud-auth.sh
+            gcloud docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
+            gcloud docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
+
+  deploy-to-dev:
+    docker:
+      - image: praqma/helmsman:v1.2.0-rc2-helm-v2.8.1
+    steps:
+      - checkout
+      - run:
+          name: run helmsman
+          command: helmsman -debug -apply -f .circleci/helmsman-deployment.toml
+
+workflows:
+  version: 2
+  build-and-publish:
+    jobs:
+      - build-image:
+          context: dnt-k8s-dev-beta
+          filters:
+            branches:
+              only: deploy-dev
+      - deploy-to-dev:
+          requires:
+            - build-image
+          context: dnt-k8s-dev-beta
+          filters:
+            branches:
+              only:
+                - deploy-dev

@@ -15,8 +15,8 @@ jobs:
       - run:
           name: authenticate with google service account
           command: |
-            chmod +x .circleci/gcloud-auth.sh
-            .circleci/gcloud-auth.sh
+            echo $GCLOUD_DOCKER_CREDENTIALS > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
 
       - checkout
 

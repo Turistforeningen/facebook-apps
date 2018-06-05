@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
- dry-run-deployment:
+  dry-run-deployment:
     docker:
       - image: praqma/helmsman:v1.2.0-rc2-helm-v2.8.1
     steps:

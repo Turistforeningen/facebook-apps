@@ -13,7 +13,7 @@ restartPolicy: Always
 containers:
   - name: fb-apps
     image: "eu.gcr.io/dnt-docker-registry-public/facebook-apps"
-    tag: latest
+    tag: ab5f06ea9
     pullPolicy: IfNotPresent
     environment:
       VIRTUAL_HOST: "https://facebook-apps.app.dnt.no/*"

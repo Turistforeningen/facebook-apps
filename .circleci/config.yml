@@ -4,42 +4,16 @@
 #
 version: 2
 jobs:
-  build-image:
+ dry-run-deployment:
     docker:
-      # specify the version you desire here
-      - image: circleci/node:7.10.0
-
-    working_directory: ~/repo
-
+      - image: praqma/helmsman:v1.2.0-rc2-helm-v2.8.1
     steps:
       - checkout
-
-      # install gcloud (needed to push images to GCR)
       - run:
-          name: install gcloud
-          command: |
-            sudo apt-get install lsb-release
-            export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
-            echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-            sudo apt-get update && sudo apt-get install google-cloud-sdk
+          name: run helmsman
+          command: helmsman -debug -f .circleci/helmsman-deployment.toml
 
-      # starts a remote docker environment to run docker commands
-      - setup_remote_docker
-
-      - run:
-          name: build facebook-apps docker image, authenticate to gcloud and push image to GCR
-          command: |
-            TAG=${CIRCLE_SHA1:0:9}
-            docker build -t facebook-apps .
-            docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
-            docker tag facebook-apps eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
-            chmod +x .circleci/gcloud-auth.sh
-            .circleci/gcloud-auth.sh
-            gcloud docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:latest
-            gcloud docker -- push eu.gcr.io/dnt-docker-registry-public/facebook-apps:$TAG
-
-  deploy-to-dev:
+  deploy-to-beta:
     docker:
       - image: praqma/helmsman:v1.2.0-rc2-helm-v2.8.1
     steps:
@@ -50,18 +24,24 @@ jobs:
 
 workflows:
   version: 2
-  build-and-publish:
+  publish:
     jobs:
-      - build-image:
+      - dry-run-deployment:
           context: dnt-k8s-dev-beta
           filters:
             branches:
-              only: deploy-dev
-      - deploy-to-dev:
+              only: deploy-beta
+      - hold-before-deploy:
+          type: approval
           requires:
-            - build-image
-          context: dnt-k8s-dev-beta
+            - dry-run-deployment
           filters:
             branches:
-              only:
-                - deploy-dev
+              only: deploy-beta
+      - deploy-to-beta:
+          context: dnt-k8s-dev-beta
+          requires:
+            - hold-before-deploy
+          filters:
+            branches:
+              only: deploy-beta

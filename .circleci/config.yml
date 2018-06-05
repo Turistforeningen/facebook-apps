@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - run:
-        name: authenticate with google service account
-        command: |
-          chmod +x .circleci/gcloud-auth.sh
-          .circleci/gcloud-auth.sh
+          name: authenticate with google service account
+          command: |
+            chmod +x .circleci/gcloud-auth.sh
+            .circleci/gcloud-auth.sh
 
       - checkout
 

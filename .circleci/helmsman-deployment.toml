@@ -25,7 +25,6 @@ clusterURI = "$DEV_CLUSTER_URI" # cluster API
 [namespaces]
 [namespaces.dev]
 
-
 # define any private/public helm charts repos you would like to get charts from
 # syntax: repo_name = "repo_url"
 [helmRepos]

@@ -1,0 +1,143 @@
+version: 2.1
+executors:
+  gcloud:
+    docker:
+      - image: google/cloud-sdk:latest
+
+jobs:
+  set-build-number-prod:
+    executor: gcloud
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Authenticate with gcloud
+          command: |
+            echo $GCLOUD_DOCKER_PRIVATE_CREDENTIALS > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+      - run:
+          name: add build name to file
+          command: |
+            apt-get install -y jq
+            chmod +x .circleci/get-build-number.sh
+            chmod +x .circleci/notify-slack.sh
+            TAG=$(./.circleci/get-build-number.sh facebook-apps)
+            echo $TAG > ~/build-id
+            ./.circleci/notify-slack.sh info Deploy to prod workflow started with tag: $TAG
+
+      - run:
+          name: Notify Slack on failure
+          when: on_fail
+          command: |
+            chmod +x .circleci/notify-slack.sh
+            ./.circleci/notify-slack.sh false Unable to create tag
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - build-id
+
+  build-image:
+    executor: gcloud
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Authenticate with gcloud
+          command: |
+            echo $GCLOUD_DOCKER_PRIVATE_CREDENTIALS > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --project=dnt-docker-registry-private --key-file=${HOME}/gcloud-service-key.json
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Build facebook-apps docker image and push image to GCR
+          command: |
+            gcloud auth configure-docker eu.gcr.io --quiet
+            TAG=$(cat ~/repo/build-id)
+            cd ~/repo
+            docker build -t facebook-apps .
+            docker tag facebook-apps eu.gcr.io/dnt-docker-registry-private/facebook-apps:latest
+            docker tag facebook-apps eu.gcr.io/dnt-docker-registry-private/facebook-apps:$TAG
+            docker push eu.gcr.io/dnt-docker-registry-private/facebook-apps:latest
+            docker push eu.gcr.io/dnt-docker-registry-private/facebook-apps:$TAG
+
+      - run:
+          name: Notify Slack on failure
+          when: on_fail
+          command: |
+            chmod +x .circleci/notify-slack.sh
+            ./.circleci/notify-slack.sh false Build image failed
+      - run:
+          name: Notify Slack on success
+          when: on_success
+          command: |
+            chmod +x .circleci/notify-slack.sh
+            ./.circleci/notify-slack.sh true Build image succeeded
+
+  deploy-to-prod:
+    executor: gcloud
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Authenticate with gcloud
+          command: |
+            echo $CLOUD_RUN_DEPLOYER_CREDENTIALS > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+      - run:
+          name: Deploy Cloud Run service
+          command: |
+            TAG=$(cat ~/repo/build-id)
+
+            gcloud beta run deploy facebook-apps--prod \
+              --project dnt-platform \
+              --platform managed \
+              --region europe-west1 \
+              --allow-unauthenticated \
+              --revision-suffix=${TAG} \
+              --max-instances=1 \
+              --concurrency=500 \
+              --memory=128 \
+              --image eu.gcr.io/dnt-docker-registry-private/facebook-apps:${TAG} \
+              --service-account=facebook-apps@dnt-platform.iam.gserviceaccount.com
+
+      - run:
+          name: Notify Slack on failure
+          when: on_fail
+          command: |
+            chmod +x .circleci/notify-slack.sh
+            TAG=$(cat ~/repo/build-id)
+            ./.circleci/notify-slack.sh false Deploy to prod failed
+      - run:
+          name: Notify Slack on success
+          when: on_success
+          command: |
+            chmod +x .circleci/notify-slack.sh
+            TAG=$(cat ~/repo/build-id)
+            ./.circleci/notify-slack.sh true Deploy to prod succeeded :tada:
+
+workflows:
+  version: 2
+  test-code-and-build-and-deploy-prod:
+    jobs:
+      - set-build-number-prod:
+          context: dnt-k8s-prod
+          filters:
+            branches:
+              only: /^master$/
+      - build-image:
+          context: dnt-k8s-prod
+          requires:
+            - set-build-number-prod
+          filters:
+            branches:
+              only: /^master$/
+      - deploy-to-prod:
+          context: dnt-k8s-prod
+          requires:
+            - build-image
+          filters:
+            branches:
+              only: /^master$/
